@@ -1,0 +1,64 @@
+//
+//  UIImage+VRWExtension.h
+//  VRWorld
+//
+//  Created by zhouzheng on 16/8/2.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import <CoreMedia/CoreMedia.h>
+
+
+
+@interface UIImage (VRWExtension)
+
+// 貌似是创建位图的 ，没太看懂,给其他函数使用
+- (UIImage *)transprent;
+
+// 圆形
+- (UIImage *)rounded;
+// 变成 尺寸circleRect的圆形
+- (UIImage *)rounded:(CGRect)circleRect;
+
+// 拉伸
+- (UIImage *)stretched;
+- (UIImage *)stretched:(UIEdgeInsets)capInsets;
+
+// 灰度
+- (UIImage *)grayscale;
+
+// 旋转
+- (UIImage *)rotate:(CGFloat)angle;
+- (UIImage *)rotateCW90;
+- (UIImage *)rotateCW180;
+- (UIImage *)rotateCW270;
+
+//等比例缩放
+- (UIImage*)scaleToSize:(CGSize)size;
+
+// 创建并返回使用指定的图像中的颜色对象。
+- (UIColor *)patternColor;
+
+// 截取部分图像
+- (UIImage *)crop:(CGRect)rect;
+// 截取部分图像
+- (UIImage *)imageInRect:(CGRect)rect;
+// 从视频截取图片
++ (UIImage *)imageFromVideo:(NSURL *)videoURL atTime:(CMTime)time scale:(CGFloat)scale;
+
+
+// 叠加合并
++ (UIImage *)merge:(NSArray *)images;
+// 叠加合并
+- (UIImage *)merge:(UIImage *)image;
+
+// 高斯模糊
+- (UIImage*)stackBlur:(NSUInteger)radius;
+
+//颜色创建图片
++ (UIImage *) createImageWithColor: (UIColor *) color;
+
+//创建圆形图片，外边的宽度和颜色
++ (instancetype)circleImageWithName:(NSString *)name borderWidth:(CGFloat)borderWidth borderColor:(UIColor *)borderColor;
+@end

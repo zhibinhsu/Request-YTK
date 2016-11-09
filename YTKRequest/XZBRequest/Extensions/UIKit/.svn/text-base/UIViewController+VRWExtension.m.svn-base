@@ -1,0 +1,24 @@
+//
+//  UIViewController+VRWExtension.m
+//  VRWorld
+//
+//  Created by zhouzheng on 16/9/2.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import "UIViewController+VRWExtension.h"
+
+@implementation UIViewController (ZZ)
+
+- (void)popToLastViewControllerAnimated:(BOOL)animated {
+    NSArray* temp = [self.navigationController.viewControllers.reverseObjectEnumerator allObjects];
+    for (int i = 0 ;i < temp.count;i++) {
+        UIViewController* tempVC = temp[i];
+        if (![tempVC isKindOfClass:[self class]]) {
+            [self.navigationController popToViewController:tempVC animated:YES];
+            break;
+        }
+    }
+}
+
+@end

@@ -1,0 +1,67 @@
+//
+//  UIView+Extension.h
+//  VRWorld
+//
+//  Created by zhouzheng on 16/8/1.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+#import <UIKit/UIKit.h>
+
+
+
+
+
+
+
+
+
+
+
+CGPoint CGRectGetCenter(CGRect rect);
+CGRect  CGRectMoveToCenter(CGRect rect, CGPoint center);
+
+@interface UIView (ViewFrameGeometry)
+@property CGPoint origin;
+@property CGSize size;
+
+@property (readonly) CGPoint bottomLeft;
+@property (readonly) CGPoint bottomRight;
+@property (readonly) CGPoint topRight;
+
+@property CGFloat height;
+@property CGFloat width;
+
+@property CGFloat top;
+@property CGFloat left;
+
+@property CGFloat bottom;
+@property CGFloat right;
+
+- (void) moveBy: (CGPoint) delta;
+- (void) scaleBy: (CGFloat) scaleFactor;
+- (void) fitInSize: (CGSize) aSize;
+
+
+- (UIViewController *)parentController;
+
+// 旋转 angle为1.0表示:顺时针旋转180度
+- (instancetype)rotate:(CGFloat)angle;
+// 把当前View变成圆形
+- (instancetype)rounded;
+// 把当前View变成圆角矩形, corners:一个矩形的四个角。
+- (instancetype)roundedRectWith:(CGFloat)radius;
+- (instancetype)roundedRectWith:(CGFloat)radius byRoundingCorners:(UIRectCorner)corners;
+
+// 边框大小,颜色
+- (instancetype)borderWidth:(CGFloat)width color:(UIColor *)color;
+
+// 移除所有子视图，但是并没有移除自己
+- (void)removeAllSubviews;
+// 移除标记为tag的子视图
+- (void)removeSubviewWithTag:(NSInteger)tag;
+// 移除标记为tag的子视图
+- (void)removeSubviewExceptTag:(NSInteger)tag;
+// 当前View是否显示在屏幕上
+- (BOOL)isDisplayedInScreen;
+
+@end

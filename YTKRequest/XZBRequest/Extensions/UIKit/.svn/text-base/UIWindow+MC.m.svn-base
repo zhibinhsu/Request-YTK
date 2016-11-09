@@ -1,0 +1,53 @@
+//
+//  UIWindow+MC.m
+//  sport
+//
+//  Created by apple on 15/7/2.
+//  Copyright (c) 2015年 apple. All rights reserved.
+//
+
+#import "UIWindow+MC.h"
+
+@implementation UIWindow (MC)
+
+- (UIViewController *)visibleViewController {
+    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+    // modal展现方式的底层视图不同
+    // 取到第一层时，取到的是UITransitionView，通过这个view拿不到控制器
+    UIView *firstView = [keyWindow.subviews firstObject];
+    UIView *secondView = [firstView.subviews firstObject];
+    UIViewController *vc = secondView.parentController;
+    
+    if ([vc isKindOfClass:[UITabBarController class]]) {
+        UITabBarController *tab = (UITabBarController *)vc;
+        if ([tab.selectedViewController isKindOfClass:[UINavigationController class]]) {
+            UINavigationController *nav = (UINavigationController *)tab.selectedViewController;
+            return [nav.viewControllers lastObject];
+        } else {
+            return tab.selectedViewController;
+        }
+    } else if ([vc isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *nav = (UINavigationController *)vc;
+        return [nav.viewControllers lastObject];
+    } else {
+        return vc;
+    }
+    return nil;
+}
+
+
++ (UIViewController *) getVisibleViewControllerFrom:(UIViewController *) vc {
+    if ([vc isKindOfClass:[UINavigationController class]]) {
+        return [UIWindow getVisibleViewControllerFrom:[((UINavigationController *) vc) visibleViewController]];
+    } else if ([vc isKindOfClass:[UITabBarController class]]) {
+        return [UIWindow getVisibleViewControllerFrom:[((UITabBarController *) vc) selectedViewController]];
+    } else {
+        if (vc.presentedViewController) {
+            return [UIWindow getVisibleViewControllerFrom:vc.presentedViewController];
+        } else {
+            return vc;
+        }
+    }
+}
+
+@end

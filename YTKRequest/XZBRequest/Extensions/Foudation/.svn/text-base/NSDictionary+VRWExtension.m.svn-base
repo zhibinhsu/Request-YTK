@@ -1,0 +1,52 @@
+//
+//  NSDictionary+VRWExtension.m
+//  VRWorld
+//
+//  Created by zhouzheng on 16/8/3.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import "NSDictionary+VRWExtension.h"
+
+static const void *__XYRetainNoOp(CFAllocatorRef allocator, const void *value) { return value; }
+static void __XYReleaseNoOp(CFAllocatorRef allocator, const void *value) { }
+
+
+@implementation NSDictionary (VRWExtension)
+
++ (NSMutableDictionary *)nonRetainDictionary
+{
+    CFDictionaryKeyCallBacks keyCallbacks = kCFTypeDictionaryKeyCallBacks;
+    CFDictionaryValueCallBacks callbacks  = kCFTypeDictionaryValueCallBacks;
+    callbacks.retain                      = __XYRetainNoOp;
+    callbacks.release                     = __XYReleaseNoOp;
+    
+    return  (__bridge_transfer NSMutableDictionary*)CFDictionaryCreateMutable(nil, 0, &keyCallbacks, &callbacks);
+}
+
+- (id)safeObjectForKey:(id)aKey
+{
+    return aKey ? self[aKey] :nil;
+}
+
+@end
+
+@implementation NSMutableDictionary (VRWExtension)
+
+- (void)safeSetObject:(id)anObject forKey:(id <NSCopying>)aKey
+{
+    aKey ? (aKey[aKey] = anObject) : nil;
+}
+
+- (void)safeSetObject:(id)obj forKeyedSubscript:(id <NSCopying>)key
+{
+    key ? ([self setObject:obj forKeyedSubscript:key]) : nil;
+}
+
+- (void)safeRemoveObjectForKey:(id)aKey
+{
+    aKey ? [self removeObjectForKey:aKey]: nil;
+}
+
+@end
+

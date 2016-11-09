@@ -1,0 +1,136 @@
+//
+//  SoonRequest.m
+//  sport
+//
+//  Created by apple on 15/12/26.
+//  Copyright © 2015年 apple. All rights reserved.
+//
+
+#import "GevekRequest.h"
+
+#import "NSDate+VRWExtension.h"
+
+@implementation GevekRequest
+
+-(id)init
+{
+    self = [super init];
+    if (self) {
+        [self.requestAccessories addObject:self];
+        [self addAccessory:self];
+    }
+    return self;
+}
+
+
+-(NSString *)baseUrl
+{
+    return DEFAULT_SERVER_IP;
+}
+
+-(NSTimeInterval)requestTimeoutInterval
+{
+    return 20;
+}
+-(YTKRequestMethod)requestMethod
+{
+    return YTKRequestMethodGet;
+}
+- (NSDictionary *)requestHeaderFieldValueDictionary
+{
+//    NSString* openUDID = [KeychainIDFA IDFA];
+    NSDictionary *dic = @{@"clientType":[NSString stringWithFormat:@"IOS"],@"appversion":[NSString stringWithFormat:@"%@",APP_VERSION]};
+    return [dic mutableCopy];
+}
+
+- (NSString *)requestAuthentication
+{
+//    NSString *accessToken = USERTEL;
+//    if (accessToken.length>0) {
+//        return accessToken;
+//    }
+    
+    return nil;
+}
+
+
+-(NSDictionary *)requestTotalArgument
+{
+    
+    NSDictionary *param = self.requestArgument;
+    
+    NSMutableDictionary *totalParam = [NSMutableDictionary dictionary];
+    
+    if([[param allKeys] containsObject:@"app_version"] == NO){
+        
+        [totalParam setObject:APP_VERSION forKey:@"app_version"];
+    }
+    
+    if(param != nil){
+       [totalParam  setValuesForKeysWithDictionary:param];
+    }
+    
+    [totalParam setValuesForKeysWithDictionary:[self commonDic]];
+   
+    return totalParam;
+}
+
+
+-(NSDictionary *)commonDic
+{
+    NSInteger sysTime = [NSDate chinaSystemCurrentTime];
+    
+    NSInteger absTime = [NSUSER_DEFAULT integerForKey:APP_CURRENT_TIME];
+    
+    sysTime += absTime;
+    
+    NSString *nowTimeStr = [NSString stringWithFormat:@"%ld",sysTime];
+
+    NSString *url = [[self.requestUrl componentsSeparatedByString:@"/"] lastObject];
+    NSString *requestUrl = [NSString stringWithFormat:@"%@\n%@\n%@\n",APP_ID,url,nowTimeStr];
+    
+    NSString *token =  [NSString hmacsha1:requestUrl key:APP_SECRET];
+   
+    NSDictionary *dic = @{@"app_id":APP_ID,@"timestamp":nowTimeStr,@"token":token};
+    return dic;
+}
+
+
+- (AFConstructingBlock)constructingBodyBlock
+{
+    return nil;
+}
+
+
+-(void (^)(YTKBaseRequest *))failureCompletionBlock
+{
+    return ^(YTKBaseRequest *request){
+        
+        NSInteger responseStatusCode = request.responseStatusCode;
+        NSString *responseString = request.responseString;
+        if(responseStatusCode == 0){
+            
+            if([AFNetworkReachabilityManager sharedManager].networkReachabilityStatus == AFNetworkReachabilityStatusNotReachable){
+//                [YProgressHUD showToastWithStatus:@"您的网络好像已经断开连接了" duration:3];
+            }else{
+                [YProgressHUD showToastWithStatus:@"网络不给力，请刷新试试..." duration:3];
+            }
+            
+        }else{
+
+            [YProgressHUD showToastWithStatus:@"服务器异常" duration:3];
+        }
+    };
+}
+
+//-(void (^)(YTKBaseRequest *))successCompletionBlock
+//{
+//    return ^(YTKBaseRequest *request){
+//        
+//        id responseJSONObject = request.responseJSONObject;
+//        
+//    };
+//}
+
+
+@end

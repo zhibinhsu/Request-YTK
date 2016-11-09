@@ -1,0 +1,310 @@
+//
+//  UIView+Extension.m
+//  VRWorld
+//
+//  Created by zhouzheng on 16/8/1.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import "UIView+VRWExtension.h"
+
+
+CGPoint CGRectGetCenter(CGRect rect)
+{
+    CGPoint pt;
+    pt.x = CGRectGetMidX(rect);
+    pt.y = CGRectGetMidY(rect);
+    return pt;
+}
+
+CGRect CGRectMoveToCenter(CGRect rect, CGPoint center)
+{
+    CGRect newrect = CGRectZero;
+    newrect.origin.x = center.x-CGRectGetMidX(rect);
+    newrect.origin.y = center.y-CGRectGetMidY(rect);
+    newrect.size = rect.size;
+    return newrect;
+}
+@implementation UIView (ViewGeometry)
+// Retrieve and set the origin
+- (CGPoint) origin
+{
+    return self.frame.origin;
+}
+
+- (void) setOrigin: (CGPoint) aPoint
+{
+    CGRect newframe = self.frame;
+    newframe.origin = aPoint;
+    self.frame = newframe;
+}
+
+
+// Retrieve and set the size
+- (CGSize) size
+{
+    return self.frame.size;
+}
+
+- (void) setSize: (CGSize) aSize
+{
+    CGRect newframe = self.frame;
+    newframe.size = aSize;
+    self.frame = newframe;
+}
+
+// Query other frame locations
+- (CGPoint) bottomRight
+{
+    CGFloat x = self.frame.origin.x + self.frame.size.width;
+    CGFloat y = self.frame.origin.y + self.frame.size.height;
+    return CGPointMake(x, y);
+}
+
+- (CGPoint) bottomLeft
+{
+    CGFloat x = self.frame.origin.x;
+    CGFloat y = self.frame.origin.y + self.frame.size.height;
+    return CGPointMake(x, y);
+}
+
+- (CGPoint) topRight
+{
+    CGFloat x = self.frame.origin.x + self.frame.size.width;
+    CGFloat y = self.frame.origin.y;
+    return CGPointMake(x, y);
+}
+
+
+// Retrieve and set height, width, top, bottom, left, right
+- (CGFloat) height
+{
+    return self.frame.size.height;
+}
+
+- (void) setHeight: (CGFloat) newheight
+{
+    CGRect newframe = self.frame;
+    newframe.size.height = newheight;
+    self.frame = newframe;
+}
+
+- (CGFloat) width
+{
+    return self.frame.size.width;
+}
+
+- (void) setWidth: (CGFloat) newwidth
+{
+    CGRect newframe = self.frame;
+    newframe.size.width = newwidth;
+    self.frame = newframe;
+}
+
+- (CGFloat) top
+{
+    return self.frame.origin.y;
+}
+
+- (void) setTop: (CGFloat) newtop
+{
+    CGRect newframe = self.frame;
+    newframe.origin.y = newtop;
+    self.frame = newframe;
+}
+
+- (CGFloat) left
+{
+    return self.frame.origin.x;
+}
+
+- (void) setLeft: (CGFloat) newleft
+{
+    CGRect newframe = self.frame;
+    newframe.origin.x = newleft;
+    self.frame = newframe;
+}
+
+- (CGFloat) bottom
+{
+    return self.frame.origin.y + self.frame.size.height;
+}
+
+- (void) setBottom: (CGFloat) newbottom
+{
+    CGRect newframe = self.frame;
+    newframe.origin.y = newbottom - self.frame.size.height;
+    self.frame = newframe;
+}
+
+- (CGFloat) right
+{
+    return self.frame.origin.x + self.frame.size.width;
+}
+
+- (void) setRight: (CGFloat) newright
+{
+    CGFloat delta = newright - (self.frame.origin.x + self.frame.size.width);
+    CGRect newframe = self.frame;
+    newframe.origin.x += delta ;
+    self.frame = newframe;
+}
+
+// Move via offset
+- (void) moveBy: (CGPoint) delta
+{
+    CGPoint newcenter = self.center;
+    newcenter.x += delta.x;
+    newcenter.y += delta.y;
+    self.center = newcenter;
+}
+
+// Scaling
+- (void) scaleBy: (CGFloat) scaleFactor
+{
+    CGRect newframe = self.frame;
+    newframe.size.width *= scaleFactor;
+    newframe.size.height *= scaleFactor;
+    self.frame = newframe;
+}
+
+// Ensure that both dimensions fit within the given size by scaling down
+- (void) fitInSize: (CGSize) aSize
+{
+    CGFloat scale;
+    CGRect newframe = self.frame;
+    
+    if (newframe.size.height && (newframe.size.height > aSize.height))
+    {
+        scale = aSize.height / newframe.size.height;
+        newframe.size.width *= scale;
+        newframe.size.height *= scale;
+    }
+    
+    if (newframe.size.width && (newframe.size.width >= aSize.width))
+    {
+        scale = aSize.width / newframe.size.width;
+        newframe.size.width *= scale;
+        newframe.size.height *= scale;
+    }
+    
+    self.frame = newframe;	
+}
+
+- (UIViewController *)parentController
+{
+    UIResponder *responder = [self nextResponder];
+    while (responder) {
+        if ([responder isKindOfClass:[UIViewController class]]) {
+            return (UIViewController *)responder;
+        }
+        responder = [responder nextResponder];
+    }
+    return nil;
+}
+#pragma mark - ZZ Delegate
+- (instancetype)rotate:(CGFloat)angle
+{
+    self.transform = CGAffineTransformRotate(CGAffineTransformIdentity, M_PI * angle);
+    
+    return self;
+}
+- (instancetype)rounded
+{
+    self.clipsToBounds = YES;
+    self.layer.cornerRadius = self.bounds.size.width / 2;
+    
+    return self;
+}
+
+- (instancetype)roundedRectWith:(CGFloat)radius{
+    self.clipsToBounds = YES;
+    self.layer.cornerRadius = radius;
+    
+    return self;
+}
+- (instancetype)roundedRectWith:(CGFloat)radius byRoundingCorners:(UIRectCorner)corners
+{
+    UIBezierPath * maskPath = [UIBezierPath bezierPathWithRoundedRect:self.bounds byRoundingCorners:corners cornerRadii:CGSizeMake(radius, radius)];
+    CAShapeLayer * maskLayer = [[CAShapeLayer alloc] init];
+    maskLayer.frame = self.bounds;
+    maskLayer.path = maskPath.CGPath;
+    self.layer.mask = maskLayer;
+    
+    return self;
+}
+
+- (instancetype)borderWidth:(CGFloat)width color:(UIColor *)color
+{
+    self.layer.borderWidth = width;
+    if (color)
+    {
+        self.layer.borderColor = color.CGColor;
+    }
+    
+    return self;
+}
+- (void)removeAllSubviews
+{
+    for (UIView *temp in self.subviews)
+    {
+        [temp removeFromSuperview];
+    }
+}
+
+- (void)removeSubviewWithTag:(NSInteger)tag
+{
+    for (UIView *temp in self.subviews)
+    {
+        if (temp.tag == tag)
+        {
+            [temp removeFromSuperview];
+        }
+    }
+}
+
+- (void)removeSubviewExceptTag:(NSInteger)tag
+{
+    for (UIView *temp in self.subviews)
+    {
+        if (temp.tag != tag)
+        {
+            [temp removeFromSuperview];
+        }
+    }
+}
+
+- (BOOL)isDisplayedInScreen
+{
+    CGRect screenRect = [UIScreen mainScreen].bounds;
+    
+    // 转换view对应window的Rect
+    CGRect rect = [self convertRect:self.frame fromView:nil];
+    if (CGRectIsEmpty(rect) || CGRectIsNull(rect)) {
+        return FALSE;
+    }
+    
+    // 若view 隐藏
+    if (self.hidden) {
+        return FALSE;
+    }
+    
+    // 若没有superview
+    if (self.superview == nil) {
+        return FALSE;
+    }
+    
+    // 若size为CGrectZero
+    if (CGSizeEqualToSize(rect.size, CGSizeZero)) {
+        return  FALSE;
+    }
+    
+    // 获取 该view与window 交叉的 Rect
+    CGRect intersectionRect = CGRectIntersection(rect, screenRect);
+    if (CGRectIsEmpty(intersectionRect) || CGRectIsNull(intersectionRect)) {
+        return FALSE;
+    }
+    
+    return YES;
+}
+@end

@@ -1,0 +1,14 @@
+//
+//  UINavigationController+VRWGestureRecognizer.h
+//  VRWorld
+//
+//  Created by mingge on 16/8/26.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface UINavigationController (VRWGestureRecognizer)
+
+@property(nonatomic,assign)BOOL shareTouch;
+@end

@@ -1,0 +1,1130 @@
+//
+//	 ______    ______    ______
+//	/\  __ \  /\  ___\  /\  ___\
+//	\ \  __<  \ \  __\_ \ \  __\_
+//	 \ \_____\ \ \_____\ \ \_____\
+//	  \/_____/  \/_____/  \/_____/
+//
+//
+//	Copyright (c) 2014-2015, Geek Zoo Studio
+//	http://www.bee-framework.com
+//
+//
+//	Permission is hereby granted, free of charge, to any person obtaining a
+//	copy of this software and associated documentation files (the "Software"),
+//	to deal in the Software without restriction, including without limitation
+//	the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//	and/or sell copies of the Software, and to permit persons to whom the
+//	Software is furnished to do so, subject to the following conditions:
+//
+//	The above copyright notice and this permission notice shall be included in
+//	all copies or substantial portions of the Software.
+//
+//	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+//	IN THE SOFTWARE.
+//
+
+#import "NSString+emoji.h"
+
+
+// ----------------------------------
+// Source code
+// ----------------------------------
+
+#pragma mark -
+
+static NSDictionary *			__emojiUnicodes = nil;
+static NSMutableCharacterSet *	__emojiCharacterSet = nil;
+
+#pragma mark -
+
+static unsigned charTo4Bits( char c )
+{
+    unsigned bits = 0;
+	
+    if ( c > '/' && c <':' )
+	{
+        bits = c - '0';
+    }
+	else if ( c > '@' && c < 'G' )
+	{
+        bits = (c - 'A') + 10;
+    }
+	else if ( c > '`' && c < 'g' )
+	{
+        bits = (c - 'a') + 10;
+    }
+	else
+	{
+        bits = 255;
+    }
+	
+    return bits;
+}
+
+#pragma mark -
+
+@implementation NSString(BeeEmoji)
+
+
++ (BOOL)isContainsEmoji:(NSString *)string {
+    
+    __block BOOL isEomji = NO;
+    
+    [string enumerateSubstringsInRange:NSMakeRange(0, [string length]) options:NSStringEnumerationByComposedCharacterSequences usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+        
+         const unichar hs = [substring characterAtIndex:0];
+         
+         if (0xd800 <= hs && hs <= 0xdbff) {
+             
+             if (substring.length > 1) {
+                 
+                 const unichar ls = [substring characterAtIndex:1];
+                 
+                 const int uc = ((hs - 0xd800) * 0x400) + (ls - 0xdc00) + 0x10000;
+                 
+                 if (0x1d000 <= uc && uc <= 0x1f77f) {
+                     
+                     isEomji = YES;
+                     
+                 }
+             }
+             
+         } else if (substring.length > 1) {
+             
+             const unichar ls = [substring characterAtIndex:1];
+             
+             if (ls == 0x20e3) {
+                 
+                 isEomji = YES;
+                 
+             }
+         } else {
+             
+             // non surrogate
+             
+             if (0x2100 <= hs && hs <= 0x27ff && hs != 0x263b) {
+                 
+                 isEomji = YES;
+                 
+             } else if (0x2B05 <= hs && hs <= 0x2b07) {
+                 
+                 isEomji = YES;
+                 
+             } else if (0x2934 <= hs && hs <= 0x2935) {
+                 
+                 isEomji = YES;
+                 
+             } else if (0x3297 <= hs && hs <= 0x3299) {
+                 
+                 isEomji = YES;
+                 
+             } else if (hs == 0xa9 || hs == 0xae || hs == 0x303d || hs == 0x3030 || hs == 0x2b55 || hs == 0x2b1c || hs == 0x2b1b || hs == 0x2b50|| hs == 0x231a ) {
+                 
+                 isEomji = YES;
+                 
+             }
+             
+         }
+         
+     }];
+    
+    return isEomji;
+}
+
+
++ (void)setupEmojiUnicode
+{
+    static dispatch_once_t onceToken;
+	
+    dispatch_once( &onceToken, ^
+				  {
+					  __emojiUnicodes = @{ \
+										   @"[e]+1[/e]"                                : @"\U0001F44D", \
+										   @"[e]-1[/e]"                                : @"\U0001F44E", \
+										   @"[e]100[/e]"                         : @"\U0001F4AF", \
+										   @"[e]1234[/e]"                        : @"\U0001F522", \
+										   @"[e]8ball[/e]"                       : @"\U0001F3B1", \
+										   @"[e]a[/e]"                           : @"\U0001F170", \
+										   @"[e]ab[/e]"                          : @"\U0001F18E", \
+										   @"[e]abc[/e]"                         : @"\U0001F524", \
+										   @"[e]abcd[/e]"                        : @"\U0001F521", \
+										   @"[e]accept[/e]"                      : @"\U0001F251", \
+										   @"[e]aerial_tramway[/e]"              : @"\U0001F6A1", \
+										   @"[e]airplane[/e]"                    : @"\U00002708", \
+										   @"[e]alarm_clock[/e]"                 : @"\U000023F0", \
+										   @"[e]alien[/e]"                       : @"\U0001F47D", \
+										   @"[e]ambulance[/e]"                   : @"\U0001F691", \
+										   @"[e]anchor[/e]"                      : @"\U00002693", \
+										   @"[e]angel[/e]"                       : @"\U0001F47C", \
+										   @"[e]anger[/e]"                       : @"\U0001F4A2", \
+										   @"[e]angry[/e]"                       : @"\U0001F620", \
+										   @"[e]anguished[/e]"                   : @"\U0001F627", \
+										   @"[e]ant[/e]"                         : @"\U0001F41C", \
+										   @"[e]apple[/e]"                       : @"\U0001F34E", \
+										   @"[e]aquarius[/e]"                    : @"\U00002652", \
+										   @"[e]aries[/e]"                       : @"\U00002648", \
+										   @"[e]arrow_backward[/e]"              : @"\U000025C0", \
+										   @"[e]arrow_double_down[/e]"           : @"\U000023EC", \
+										   @"[e]arrow_double_up[/e]"             : @"\U000023EB", \
+										   @"[e]arrow_down[/e]"                  : @"\U00002B07", \
+										   @"[e]arrow_down_small[/e]"            : @"\U0001F53D", \
+										   @"[e]arrow_forward[/e]"               : @"\U000025B6", \
+										   @"[e]arrow_heading_down[/e]"          : @"\U00002935", \
+										   @"[e]arrow_heading_up[/e]"            : @"\U00002934", \
+										   @"[e]arrow_left[/e]"                  : @"\U00002B05", \
+										   @"[e]arrow_lower_left[/e]"            : @"\U00002199", \
+										   @"[e]arrow_lower_right[/e]"           : @"\U00002198", \
+										   @"[e]arrow_right[/e]"                 : @"\U000027A1", \
+										   @"[e]arrow_right_hook[/e]"            : @"\U000021AA", \
+										   @"[e]arrow_up[/e]"                    : @"\U00002B06", \
+										   @"[e]arrow_up_down[/e]"               : @"\U00002195", \
+										   @"[e]arrow_up_small[/e]"              : @"\U0001F53C", \
+										   @"[e]arrow_upper_left[/e]"            : @"\U00002196", \
+										   @"[e]arrow_upper_right[/e]"           : @"\U00002197", \
+										   @"[e]arrows_clockwise[/e]"            : @"\U0001F503", \
+										   @"[e]arrows_counterclockwise[/e]"     : @"\U0001F504", \
+										   @"[e]art[/e]"                         : @"\U0001F3A8", \
+										   @"[e]articulated_lorry[/e]"           : @"\U0001F69B", \
+										   @"[e]astonished[/e]"                  : @"\U0001F632", \
+										   @"[e]athletic_shoe[/e]"               : @"\U0001F45F", \
+										   @"[e]atm[/e]"                         : @"\U0001F3E7", \
+										   @"[e]b[/e]"                           : @"\U0001F171", \
+										   @"[e]baby[/e]"                        : @"\U0001F476", \
+										   @"[e]baby_bottle[/e]"                 : @"\U0001F37C", \
+										   @"[e]baby_chick[/e]"                  : @"\U0001F424", \
+										   @"[e]baby_symbol[/e]"                 : @"\U0001F6BC", \
+										   @"[e]back[/e]"                        : @"\U0001F519", \
+										   @"[e]baggage_claim[/e]"               : @"\U0001F6C4", \
+										   @"[e]balloon[/e]"                     : @"\U0001F388", \
+										   @"[e]ballot_box_with_check[/e]"       : @"\U00002611", \
+										   @"[e]bamboo[/e]"                      : @"\U0001F38D", \
+										   @"[e]banana[/e]"                      : @"\U0001F34C", \
+										   @"[e]bangbang[/e]"                    : @"\U0000203C", \
+										   @"[e]bank[/e]"                        : @"\U0001F3E6", \
+										   @"[e]bar_chart[/e]"                   : @"\U0001F4CA", \
+										   @"[e]barber[/e]"                      : @"\U0001F488", \
+										   @"[e]baseball[/e]"                    : @"\U000026BE", \
+										   @"[e]basketball[/e]"                  : @"\U0001F3C0", \
+										   @"[e]bath[/e]"                        : @"\U0001F6C0", \
+										   @"[e]bathtub[/e]"                     : @"\U0001F6C1", \
+										   @"[e]battery[/e]"                     : @"\U0001F50B", \
+										   @"[e]bear[/e]"                        : @"\U0001F43B", \
+										   @"[e]bee[/e]"                         : @"\U0001F41D", \
+										   @"[e]beer[/e]"                        : @"\U0001F37A", \
+										   @"[e]beers[/e]"                       : @"\U0001F37B", \
+										   @"[e]beetle[/e]"                      : @"\U0001F41E", \
+										   @"[e]beginner[/e]"                    : @"\U0001F530", \
+										   @"[e]bell[/e]"                        : @"\U0001F514", \
+										   @"[e]bento[/e]"                       : @"\U0001F371", \
+										   @"[e]bicyclist[/e]"                   : @"\U0001F6B4", \
+										   @"[e]bike[/e]"                        : @"\U0001F6B2", \
+										   @"[e]bikini[/e]"                      : @"\U0001F459", \
+										   @"[e]bird[/e]"                        : @"\U0001F426", \
+										   @"[e]birthday[/e]"                    : @"\U0001F382", \
+										   @"[e]black_circle[/e]"                : @"\U000026AB", \
+										   @"[e]black_joker[/e]"                 : @"\U0001F0CF", \
+										   @"[e]black_large_square[/e]"          : @"\U00002B1B", \
+										   @"[e]black_medium_small_square[/e]"   : @"\U000025FE", \
+										   @"[e]black_medium_square[/e]"         : @"\U000025FC", \
+										   @"[e]black_nib[/e]"                   : @"\U00002712", \
+										   @"[e]black_small_square[/e]"          : @"\U000025AA", \
+										   @"[e]black_square_button[/e]"         : @"\U0001F532", \
+										   @"[e]blossom[/e]"                     : @"\U0001F33C", \
+										   @"[e]blowfish[/e]"                    : @"\U0001F421", \
+										   @"[e]blue_book[/e]"                   : @"\U0001F4D8", \
+										   @"[e]blue_car[/e]"                    : @"\U0001F699", \
+										   @"[e]blue_heart[/e]"                  : @"\U0001F499", \
+										   @"[e]blush[/e]"                       : @"\U0001F60A", \
+										   @"[e]boar[/e]"                        : @"\U0001F417", \
+										   @"[e]boat[/e]"                        : @"\U000026F5", \
+										   @"[e]bomb[/e]"                        : @"\U0001F4A3", \
+										   @"[e]book[/e]"                        : @"\U0001F4D6", \
+										   @"[e]bookmark[/e]"                    : @"\U0001F516", \
+										   @"[e]bookmark_tabs[/e]"               : @"\U0001F4D1", \
+										   @"[e]books[/e]"                       : @"\U0001F4DA", \
+										   @"[e]boom[/e]"                        : @"\U0001F4A5", \
+										   @"[e]boot[/e]"                        : @"\U0001F462", \
+										   @"[e]bouquet[/e]"                     : @"\U0001F490", \
+										   @"[e]bow[/e]"                         : @"\U0001F647", \
+										   @"[e]bowling[/e]"                     : @"\U0001F3B3", \
+										   @"[e]boy[/e]"                         : @"\U0001F466", \
+										   @"[e]bread[/e]"                       : @"\U0001F35E", \
+										   @"[e]bride_with_veil[/e]"             : @"\U0001F470", \
+										   @"[e]bridge_at_night[/e]"             : @"\U0001F309", \
+										   @"[e]briefcase[/e]"                   : @"\U0001F4BC", \
+										   @"[e]broken_heart[/e]"                : @"\U0001F494", \
+										   @"[e]bug[/e]"                         : @"\U0001F41B", \
+										   @"[e]bulb[/e]"                        : @"\U0001F4A1", \
+										   @"[e]bullettrain_front[/e]"           : @"\U0001F685", \
+										   @"[e]bullettrain_side[/e]"            : @"\U0001F684", \
+										   @"[e]bus[/e]"                         : @"\U0001F68C", \
+										   @"[e]busstop[/e]"                     : @"\U0001F68F", \
+										   @"[e]bust_in_silhouette[/e]"          : @"\U0001F464", \
+										   @"[e]busts_in_silhouette[/e]"         : @"\U0001F465", \
+										   @"[e]cactus[/e]"                      : @"\U0001F335", \
+										   @"[e]cake[/e]"                        : @"\U0001F370", \
+										   @"[e]calendar[/e]"                    : @"\U0001F4C6", \
+										   @"[e]calling[/e]"                     : @"\U0001F4F2", \
+										   @"[e]camel[/e]"                       : @"\U0001F42B", \
+										   @"[e]camera[/e]"                      : @"\U0001F4F7", \
+										   @"[e]cancer[/e]"                      : @"\U0000264B", \
+										   @"[e]candy[/e]"                       : @"\U0001F36C", \
+										   @"[e]capital_abcd[/e]"                : @"\U0001F520", \
+										   @"[e]capricorn[/e]"                   : @"\U00002651", \
+										   @"[e]car[/e]"                         : @"\U0001F697", \
+										   @"[e]card_index[/e]"                  : @"\U0001F4C7", \
+										   @"[e]carousel_horse[/e]"              : @"\U0001F3A0", \
+										   @"[e]cat[/e]"                         : @"\U0001F431", \
+										   @"[e]cat2[/e]"                        : @"\U0001F408", \
+										   @"[e]cd[/e]"                          : @"\U0001F4BF", \
+										   @"[e]chart[/e]"                       : @"\U0001F4B9", \
+										   @"[e]chart_with_downwards_trend[/e]"  : @"\U0001F4C9", \
+										   @"[e]chart_with_upwards_trend[/e]"    : @"\U0001F4C8", \
+										   @"[e]checkered_flag[/e]"              : @"\U0001F3C1", \
+										   @"[e]cherries[/e]"                    : @"\U0001F352", \
+										   @"[e]cherry_blossom[/e]"              : @"\U0001F338", \
+										   @"[e]chestnut[/e]"                    : @"\U0001F330", \
+										   @"[e]chicken[/e]"                     : @"\U0001F414", \
+										   @"[e]children_crossing[/e]"           : @"\U0001F6B8", \
+										   @"[e]chocolate_bar[/e]"               : @"\U0001F36B", \
+										   @"[e]christmas_tree[/e]"              : @"\U0001F384", \
+										   @"[e]church[/e]"                      : @"\U000026EA", \
+										   @"[e]cinema[/e]"                      : @"\U0001F3A6", \
+										   @"[e]circus_tent[/e]"                 : @"\U0001F3AA", \
+										   @"[e]city_sunrise[/e]"                : @"\U0001F307", \
+										   @"[e]city_sunset[/e]"                 : @"\U0001F306", \
+										   @"[e]cl[/e]"                          : @"\U0001F191", \
+										   @"[e]clap[/e]"                        : @"\U0001F44F", \
+										   @"[e]clapper[/e]"                     : @"\U0001F3AC", \
+										   @"[e]clipboard[/e]"                   : @"\U0001F4CB", \
+										   @"[e]clock1[/e]"                      : @"\U0001F550", \
+										   @"[e]clock10[/e]"                     : @"\U0001F559", \
+										   @"[e]clock1030[/e]"                   : @"\U0001F565", \
+										   @"[e]clock11[/e]"                     : @"\U0001F55A", \
+										   @"[e]clock1130[/e]"                   : @"\U0001F566", \
+										   @"[e]clock12[/e]"                     : @"\U0001F55B", \
+										   @"[e]clock1230[/e]"                   : @"\U0001F567", \
+										   @"[e]clock130[/e]"                    : @"\U0001F55C", \
+										   @"[e]clock2[/e]"                      : @"\U0001F551", \
+										   @"[e]clock230[/e]"                    : @"\U0001F55D", \
+										   @"[e]clock3[/e]"                      : @"\U0001F552", \
+										   @"[e]clock330[/e]"                    : @"\U0001F55E", \
+										   @"[e]clock4[/e]"                      : @"\U0001F553", \
+										   @"[e]clock430[/e]"                    : @"\U0001F55F", \
+										   @"[e]clock5[/e]"                      : @"\U0001F554", \
+										   @"[e]clock530[/e]"                    : @"\U0001F560", \
+										   @"[e]clock6[/e]"                      : @"\U0001F555", \
+										   @"[e]clock630[/e]"                    : @"\U0001F561", \
+										   @"[e]clock7[/e]"                      : @"\U0001F556", \
+										   @"[e]clock730[/e]"                    : @"\U0001F562", \
+										   @"[e]clock8[/e]"                      : @"\U0001F557", \
+										   @"[e]clock830[/e]"                    : @"\U0001F563", \
+										   @"[e]clock9[/e]"                      : @"\U0001F558", \
+										   @"[e]clock930[/e]"                    : @"\U0001F564", \
+										   @"[e]closed_book[/e]"                 : @"\U0001F4D5", \
+										   @"[e]closed_lock_with_key[/e]"        : @"\U0001F510", \
+										   @"[e]closed_umbrella[/e]"             : @"\U0001F302", \
+										   @"[e]cloud[/e]"                       : @"\U00002601", \
+										   @"[e]clubs[/e]"                       : @"\U00002663", \
+										   @"[e]cocktail[/e]"                    : @"\U0001F378", \
+										   @"[e]coffee[/e]"                      : @"\U00002615", \
+										   @"[e]cold_sweat[/e]"                  : @"\U0001F630", \
+										   @"[e]collision[/e]"                   : @"\U0001F4A5", \
+										   @"[e]computer[/e]"                    : @"\U0001F4BB", \
+										   @"[e]confetti_ball[/e]"               : @"\U0001F38A", \
+										   @"[e]confounded[/e]"                  : @"\U0001F616", \
+										   @"[e]confused[/e]"                    : @"\U0001F615", \
+										   @"[e]congratulations[/e]"             : @"\U00003297", \
+										   @"[e]construction[/e]"                : @"\U0001F6A7", \
+										   @"[e]construction_worker[/e]"         : @"\U0001F477", \
+										   @"[e]convenience_store[/e]"           : @"\U0001F3EA", \
+										   @"[e]cookie[/e]"                      : @"\U0001F36A", \
+										   @"[e]cool[/e]"                        : @"\U0001F192", \
+										   @"[e]cop[/e]"                         : @"\U0001F46E", \
+										   @"[e]copyright[/e]"                   : @"\U000000A9", \
+										   @"[e]corn[/e]"                        : @"\U0001F33D", \
+										   @"[e]couple[/e]"                      : @"\U0001F46B", \
+										   @"[e]couple_with_heart[/e]"           : @"\U0001F491", \
+										   @"[e]couplekiss[/e]"                  : @"\U0001F48F", \
+										   @"[e]cow[/e]"                         : @"\U0001F42E", \
+										   @"[e]cow2[/e]"                        : @"\U0001F404", \
+										   @"[e]credit_card[/e]"                 : @"\U0001F4B3", \
+										   @"[e]crescent_moon[/e]"               : @"\U0001F319", \
+										   @"[e]crocodile[/e]"                   : @"\U0001F40A", \
+										   @"[e]crossed_flags[/e]"               : @"\U0001F38C", \
+										   @"[e]crown[/e]"                       : @"\U0001F451", \
+										   @"[e]cry[/e]"                         : @"\U0001F622", \
+										   @"[e]crying_cat_face[/e]"             : @"\U0001F63F", \
+										   @"[e]crystal_ball[/e]"                : @"\U0001F52E", \
+										   @"[e]cupid[/e]"                       : @"\U0001F498", \
+										   @"[e]curly_loop[/e]"                  : @"\U000027B0", \
+										   @"[e]currency_exchange[/e]"           : @"\U0001F4B1", \
+										   @"[e]curry[/e]"                       : @"\U0001F35B", \
+										   @"[e]custard[/e]"                     : @"\U0001F36E", \
+										   @"[e]customs[/e]"                     : @"\U0001F6C3", \
+										   @"[e]cyclone[/e]"                     : @"\U0001F300", \
+										   @"[e]dancer[/e]"                      : @"\U0001F483", \
+										   @"[e]dancers[/e]"                     : @"\U0001F46F", \
+										   @"[e]dango[/e]"                       : @"\U0001F361", \
+										   @"[e]dart[/e]"                        : @"\U0001F3AF", \
+										   @"[e]dash[/e]"                        : @"\U0001F4A8", \
+										   @"[e]date[/e]"                        : @"\U0001F4C5", \
+										   @"[e]deciduous_tree[/e]"              : @"\U0001F333", \
+										   @"[e]department_store[/e]"            : @"\U0001F3EC", \
+										   @"[e]diamond_shape_with_a_dot_inside:"   : @"\U0001F4A0", \
+										   @"[e]diamonds[/e]"                    : @"\U00002666", \
+										   @"[e]disappointed[/e]"                : @"\U0001F61E", \
+										   @"[e]disappointed_relieved[/e]"       : @"\U0001F625", \
+										   @"[e]dizzy[/e]"                       : @"\U0001F4AB", \
+										   @"[e]dizzy_face[/e]"                  : @"\U0001F635", \
+										   @"[e]do_not_litter[/e]"               : @"\U0001F6AF", \
+										   @"[e]dog[/e]"                         : @"\U0001F436", \
+										   @"[e]dog2[/e]"                        : @"\U0001F415", \
+										   @"[e]dollar[/e]"                      : @"\U0001F4B5", \
+										   @"[e]dolls[/e]"                       : @"\U0001F38E", \
+										   @"[e]dolphin[/e]"                     : @"\U0001F42C", \
+										   @"[e]door[/e]"                        : @"\U0001F6AA", \
+										   @"[e]doughnut[/e]"                    : @"\U0001F369", \
+										   @"[e]dragon[/e]"                      : @"\U0001F409", \
+										   @"[e]dragon_face[/e]"                 : @"\U0001F432", \
+										   @"[e]dress[/e]"                       : @"\U0001F457", \
+										   @"[e]dromedary_camel[/e]"             : @"\U0001F42A", \
+										   @"[e]droplet[/e]"                     : @"\U0001F4A7", \
+										   @"[e]dvd[/e]"                         : @"\U0001F4C0", \
+										   @"[e]e-mail[/e]"                      : @"\U0001F4E7", \
+										   @"[e]ear[/e]"                         : @"\U0001F442", \
+										   @"[e]ear_of_rice[/e]"                 : @"\U0001F33E", \
+										   @"[e]earth_africa[/e]"                : @"\U0001F30D", \
+										   @"[e]earth_americas[/e]"              : @"\U0001F30E", \
+										   @"[e]earth_asia[/e]"                  : @"\U0001F30F", \
+										   @"[e]egg[/e]"                         : @"\U0001F373", \
+										   @"[e]eggplant[/e]"                    : @"\U0001F346", \
+										   @"[e]eight_pointed_black_star[/e]"    : @"\U00002734", \
+										   @"[e]eight_spoked_asterisk[/e]"       : @"\U00002733", \
+										   @"[e]electric_plug[/e]"               : @"\U0001F50C", \
+										   @"[e]elephant[/e]"                    : @"\U0001F418", \
+										   @"[e]email[/e]"                       : @"\U00002709", \
+										   @"[e]end[/e]"                         : @"\U0001F51A", \
+										   @"[e]envelope[/e]"                    : @"\U00002709", \
+										   @"[e]envelope_with_arrow[/e]"         : @"\U0001F4E9", \
+										   @"[e]euro[/e]"                        : @"\U0001F4B6", \
+										   @"[e]european_castle[/e]"             : @"\U0001F3F0", \
+										   @"[e]european_post_office[/e]"        : @"\U0001F3E4", \
+										   @"[e]evergreen_tree[/e]"              : @"\U0001F332", \
+										   @"[e]exclamation[/e]"                 : @"\U00002757", \
+										   @"[e]expressionless[/e]"              : @"\U0001F611", \
+										   @"[e]eyeglasses[/e]"                  : @"\U0001F453", \
+										   @"[e]eyes[/e]"                        : @"\U0001F440", \
+										   @"[e]facepunch[/e]"                   : @"\U0001F44A", \
+										   @"[e]factory[/e]"                     : @"\U0001F3ED", \
+										   @"[e]fallen_leaf[/e]"                 : @"\U0001F342", \
+										   @"[e]family[/e]"                      : @"\U0001F46A", \
+										   @"[e]fast_forward[/e]"                : @"\U000023E9", \
+										   @"[e]fax[/e]"                         : @"\U0001F4E0", \
+										   @"[e]fearful[/e]"                     : @"\U0001F628", \
+										   @"[e]feet[/e]"                        : @"\U0001F43E", \
+										   @"[e]ferris_wheel[/e]"                : @"\U0001F3A1", \
+										   @"[e]file_folder[/e]"                 : @"\U0001F4C1", \
+										   @"[e]fire[/e]"                        : @"\U0001F525", \
+										   @"[e]fire_engine[/e]"                 : @"\U0001F692", \
+										   @"[e]fireworks[/e]"                   : @"\U0001F386", \
+										   @"[e]first_quarter_moon[/e]"          : @"\U0001F313", \
+										   @"[e]first_quarter_moon_with_face[/e]"  : @"\U0001F31B", \
+										   @"[e]fish[/e]"                        : @"\U0001F41F", \
+										   @"[e]fish_cake[/e]"                   : @"\U0001F365", \
+										   @"[e]fishing_pole_and_fish[/e]"       : @"\U0001F3A3", \
+										   @"[e]fist[/e]"                        : @"\U0000270A", \
+										   @"[e]flags[/e]"                       : @"\U0001F38F", \
+										   @"[e]flashlight[/e]"                  : @"\U0001F526", \
+										   @"[e]flipper[/e]"                     : @"\U0001F42C", \
+										   @"[e]floppy_disk[/e]"                 : @"\U0001F4BE", \
+										   @"[e]flower_playing_cards[/e]"        : @"\U0001F3B4", \
+										   @"[e]flushed[/e]"                     : @"\U0001F633", \
+										   @"[e]foggy[/e]"                       : @"\U0001F301", \
+										   @"[e]football[/e]"                    : @"\U0001F3C8", \
+										   @"[e]footprints[/e]"                  : @"\U0001F463", \
+										   @"[e]fork_and_knife[/e]"              : @"\U0001F374", \
+										   @"[e]fountain[/e]"                    : @"\U000026F2", \
+										   @"[e]four_leaf_clover[/e]"            : @"\U0001F340", \
+										   @"[e]free[/e]"                        : @"\U0001F193", \
+										   @"[e]fried_shrimp[/e]"                : @"\U0001F364", \
+										   @"[e]fries[/e]"                       : @"\U0001F35F", \
+										   @"[e]frog[/e]"                        : @"\U0001F438", \
+										   @"[e]frowning[/e]"                    : @"\U0001F626", \
+										   @"[e]fuelpump[/e]"                    : @"\U000026FD", \
+										   @"[e]full_moon[/e]"                   : @"\U0001F315", \
+										   @"[e]full_moon_with_face[/e]"         : @"\U0001F31D", \
+										   @"[e]game_die[/e]"                    : @"\U0001F3B2", \
+										   @"[e]gem[/e]"                         : @"\U0001F48E", \
+										   @"[e]gemini[/e]"                      : @"\U0000264A", \
+										   @"[e]ghost[/e]"                       : @"\U0001F47B", \
+										   @"[e]gift[/e]"                        : @"\U0001F381", \
+										   @"[e]gift_heart[/e]"                  : @"\U0001F49D", \
+										   @"[e]girl[/e]"                        : @"\U0001F467", \
+										   @"[e]globe_with_meridians[/e]"        : @"\U0001F310", \
+										   @"[e]goat[/e]"                        : @"\U0001F410", \
+										   @"[e]golf[/e]"                        : @"\U000026F3", \
+										   @"[e]grapes[/e]"                      : @"\U0001F347", \
+										   @"[e]green_apple[/e]"                 : @"\U0001F34F", \
+										   @"[e]green_book[/e]"                  : @"\U0001F4D7", \
+										   @"[e]green_heart[/e]"                 : @"\U0001F49A", \
+										   @"[e]grey_exclamation[/e]"            : @"\U00002755", \
+										   @"[e]grey_question[/e]"               : @"\U00002754", \
+										   @"[e]grimacing[/e]"                   : @"\U0001F62C", \
+										   @"[e]grin[/e]"                        : @"\U0001F601", \
+										   @"[e]grinning[/e]"                    : @"\U0001F600", \
+										   @"[e]guardsman[/e]"                   : @"\U0001F482", \
+										   @"[e]guitar[/e]"                      : @"\U0001F3B8", \
+										   @"[e]gun[/e]"                         : @"\U0001F52B", \
+										   @"[e]haircut[/e]"                     : @"\U0001F487", \
+										   @"[e]hamburger[/e]"                   : @"\U0001F354", \
+										   @"[e]hammer[/e]"                      : @"\U0001F528", \
+										   @"[e]hamster[/e]"                     : @"\U0001F439", \
+										   @"[e]hand[/e]"                        : @"\U0000270B", \
+										   @"[e]handbag[/e]"                     : @"\U0001F45C", \
+										   @"[e]hankey[/e]"                      : @"\U0001F4A9", \
+										   @"[e]hatched_chick[/e]"               : @"\U0001F425", \
+										   @"[e]hatching_chick[/e]"              : @"\U0001F423", \
+										   @"[e]headphones[/e]"                  : @"\U0001F3A7", \
+										   @"[e]hear_no_evil[/e]"                : @"\U0001F649", \
+										   @"[e]heart[/e]"                       : @"\U00002764", \
+										   @"[e]heart_decoration[/e]"            : @"\U0001F49F", \
+										   @"[e]heart_eyes[/e]"                  : @"\U0001F60D", \
+										   @"[e]heart_eyes_cat[/e]"              : @"\U0001F63B", \
+										   @"[e]heartbeat[/e]"                   : @"\U0001F493", \
+										   @"[e]heartpulse[/e]"                  : @"\U0001F497", \
+										   @"[e]hearts[/e]"                      : @"\U00002665", \
+										   @"[e]heavy_check_mark[/e]"            : @"\U00002714", \
+										   @"[e]heavy_division_sign[/e]"         : @"\U00002797", \
+										   @"[e]heavy_dollar_sign[/e]"           : @"\U0001F4B2", \
+										   @"[e]heavy_exclamation_mark[/e]"      : @"\U00002757", \
+										   @"[e]heavy_minus_sign[/e]"            : @"\U00002796", \
+										   @"[e]heavy_multiplication_x[/e]"      : @"\U00002716", \
+										   @"[e]heavy_plus_sign[/e]"             : @"\U00002795", \
+										   @"[e]helicopter[/e]"                  : @"\U0001F681", \
+										   @"[e]herb[/e]"                        : @"\U0001F33F", \
+										   @"[e]hibiscus[/e]"                    : @"\U0001F33A", \
+										   @"[e]high_brightness[/e]"             : @"\U0001F506", \
+										   @"[e]high_heel[/e]"                   : @"\U0001F460", \
+										   @"[e]hocho[/e]"                       : @"\U0001F52A", \
+										   @"[e]honey_pot[/e]"                   : @"\U0001F36F", \
+										   @"[e]honeybee[/e]"                    : @"\U0001F41D", \
+										   @"[e]horse[/e]"                       : @"\U0001F434", \
+										   @"[e]horse_racing[/e]"                : @"\U0001F3C7", \
+										   @"[e]hospital[/e]"                    : @"\U0001F3E5", \
+										   @"[e]hotel[/e]"                       : @"\U0001F3E8", \
+										   @"[e]hotsprings[/e]"                  : @"\U00002668", \
+										   @"[e]hourglass[/e]"                   : @"\U0000231B", \
+										   @"[e]hourglass_flowing_sand[/e]"      : @"\U000023F3", \
+										   @"[e]house[/e]"                       : @"\U0001F3E0", \
+										   @"[e]house_with_garden[/e]"           : @"\U0001F3E1", \
+										   @"[e]hushed[/e]"                      : @"\U0001F62F", \
+										   @"[e]ice_cream[/e]"                   : @"\U0001F368", \
+										   @"[e]icecream[/e]"                    : @"\U0001F366", \
+										   @"[e]id[/e]"                          : @"\U0001F194", \
+										   @"[e]ideograph_advantage[/e]"         : @"\U0001F250", \
+										   @"[e]imp[/e]"                         : @"\U0001F47F", \
+										   @"[e]inbox_tray[/e]"                  : @"\U0001F4E5", \
+										   @"[e]incoming_envelope[/e]"           : @"\U0001F4E8", \
+										   @"[e]information_desk_person[/e]"     : @"\U0001F481", \
+										   @"[e]information_source[/e]"          : @"\U00002139", \
+										   @"[e]innocent[/e]"                    : @"\U0001F607", \
+										   @"[e]interrobang[/e]"                 : @"\U00002049", \
+										   @"[e]iphone[/e]"                      : @"\U0001F4F1", \
+										   @"[e]izakaya_lantern[/e]"             : @"\U0001F3EE", \
+										   @"[e]jack_o_lantern[/e]"              : @"\U0001F383", \
+										   @"[e]japan[/e]"                       : @"\U0001F5FE", \
+										   @"[e]japanese_castle[/e]"             : @"\U0001F3EF", \
+										   @"[e]japanese_goblin[/e]"             : @"\U0001F47A", \
+										   @"[e]japanese_ogre[/e]"               : @"\U0001F479", \
+										   @"[e]jeans[/e]"                       : @"\U0001F456", \
+										   @"[e]joy[/e]"                         : @"\U0001F602", \
+										   @"[e]joy_cat[/e]"                     : @"\U0001F639", \
+										   @"[e]key[/e]"                         : @"\U0001F511", \
+										   @"[e]keycap_ten[/e]"                  : @"\U0001F51F", \
+										   @"[e]kimono[/e]"                      : @"\U0001F458", \
+										   @"[e]kiss[/e]"                        : @"\U0001F48B", \
+										   @"[e]kissing[/e]"                     : @"\U0001F617", \
+										   @"[e]kissing_cat[/e]"                 : @"\U0001F63D", \
+										   @"[e]kissing_closed_eyes[/e]"         : @"\U0001F61A", \
+										   @"[e]kissing_heart[/e]"               : @"\U0001F618", \
+										   @"[e]kissing_smiling_eyes[/e]"        : @"\U0001F619", \
+										   @"[e]koala[/e]"                       : @"\U0001F428", \
+										   @"[e]koko[/e]"                        : @"\U0001F201", \
+										   @"[e]lantern[/e]"                     : @"\U0001F3EE", \
+										   @"[e]large_blue_circle[/e]"           : @"\U0001F535", \
+										   @"[e]large_blue_diamond[/e]"          : @"\U0001F537", \
+										   @"[e]large_orange_diamond[/e]"        : @"\U0001F536", \
+										   @"[e]last_quarter_moon[/e]"           : @"\U0001F317", \
+										   @"[e]last_quarter_moon_with_face[/e]" : @"\U0001F31C", \
+										   @"[e]laughing[/e]"                    : @"\U0001F606", \
+										   @"[e]leaves[/e]"                      : @"\U0001F343", \
+										   @"[e]ledger[/e]"                      : @"\U0001F4D2", \
+										   @"[e]left_luggage[/e]"                : @"\U0001F6C5", \
+										   @"[e]left_right_arrow[/e]"            : @"\U00002194", \
+										   @"[e]leftwards_arrow_with_hook[/e]"   : @"\U000021A9", \
+										   @"[e]lemon[/e]"                       : @"\U0001F34B", \
+										   @"[e]leo[/e]"                         : @"\U0000264C", \
+										   @"[e]leopard[/e]"                     : @"\U0001F406", \
+										   @"[e]libra[/e]"                       : @"\U0000264E", \
+										   @"[e]light_rail[/e]"                  : @"\U0001F688", \
+										   @"[e]link[/e]"                        : @"\U0001F517", \
+										   @"[e]lips[/e]"                        : @"\U0001F444", \
+										   @"[e]lipstick[/e]"                    : @"\U0001F484", \
+										   @"[e]lock[/e]"                        : @"\U0001F512", \
+										   @"[e]lock_with_ink_pen[/e]"           : @"\U0001F50F", \
+										   @"[e]lollipop[/e]"                    : @"\U0001F36D", \
+										   @"[e]loop[/e]"                        : @"\U000027BF", \
+										   @"[e]loudspeaker[/e]"                 : @"\U0001F4E2", \
+										   @"[e]love_hotel[/e]"                  : @"\U0001F3E9", \
+										   @"[e]love_letter[/e]"                 : @"\U0001F48C", \
+										   @"[e]low_brightness[/e]"              : @"\U0001F505", \
+										   @"[e]m[/e]"                           : @"\U000024C2", \
+										   @"[e]mag[/e]"                         : @"\U0001F50D", \
+										   @"[e]mag_right[/e]"                   : @"\U0001F50E", \
+										   @"[e]mahjong[/e]"                     : @"\U0001F004", \
+										   @"[e]mailbox[/e]"                     : @"\U0001F4EB", \
+										   @"[e]mailbox_closed[/e]"              : @"\U0001F4EA", \
+										   @"[e]mailbox_with_mail[/e]"           : @"\U0001F4EC", \
+										   @"[e]mailbox_with_no_mail[/e]"        : @"\U0001F4ED", \
+										   @"[e]man[/e]"                         : @"\U0001F468", \
+										   @"[e]man_with_gua_pi_mao[/e]"         : @"\U0001F472", \
+										   @"[e]man_with_turban[/e]"             : @"\U0001F473", \
+										   @"[e]mans_shoe[/e]"                   : @"\U0001F45E", \
+										   @"[e]maple_leaf[/e]"                  : @"\U0001F341", \
+										   @"[e]mask[/e]"                        : @"\U0001F637", \
+										   @"[e]massage[/e]"                     : @"\U0001F486", \
+										   @"[e]meat_on_bone[/e]"                : @"\U0001F356", \
+										   @"[e]mega[/e]"                        : @"\U0001F4E3", \
+										   @"[e]melon[/e]"                       : @"\U0001F348", \
+										   @"[e]memo[/e]"                        : @"\U0001F4DD", \
+										   @"[e]mens[/e]"                        : @"\U0001F6B9", \
+										   @"[e]metro[/e]"                       : @"\U0001F687", \
+										   @"[e]microphone[/e]"                  : @"\U0001F3A4", \
+										   @"[e]microscope[/e]"                  : @"\U0001F52C", \
+										   @"[e]milky_way[/e]"                   : @"\U0001F30C", \
+										   @"[e]minibus[/e]"                     : @"\U0001F690", \
+										   @"[e]minidisc[/e]"                    : @"\U0001F4BD", \
+										   @"[e]mobile_phone_off[/e]"            : @"\U0001F4F4", \
+										   @"[e]money_with_wings[/e]"            : @"\U0001F4B8", \
+										   @"[e]moneybag[/e]"                    : @"\U0001F4B0", \
+										   @"[e]monkey[/e]"                      : @"\U0001F412", \
+										   @"[e]monkey_face[/e]"                 : @"\U0001F435", \
+										   @"[e]monorail[/e]"                    : @"\U0001F69D", \
+										   @"[e]moon[/e]"                        : @"\U0001F314", \
+										   @"[e]mortar_board[/e]"                : @"\U0001F393", \
+										   @"[e]mount_fuji[/e]"                  : @"\U0001F5FB", \
+										   @"[e]mountain_bicyclist[/e]"          : @"\U0001F6B5", \
+										   @"[e]mountain_cableway[/e]"           : @"\U0001F6A0", \
+										   @"[e]mountain_railway[/e]"            : @"\U0001F69E", \
+										   @"[e]mouse[/e]"                       : @"\U0001F42D", \
+										   @"[e]mouse2[/e]"                      : @"\U0001F401", \
+										   @"[e]movie_camera[/e]"                : @"\U0001F3A5", \
+										   @"[e]moyai[/e]"                       : @"\U0001F5FF", \
+										   @"[e]muscle[/e]"                      : @"\U0001F4AA", \
+										   @"[e]mushroom[/e]"                    : @"\U0001F344", \
+										   @"[e]musical_keyboard[/e]"            : @"\U0001F3B9", \
+										   @"[e]musical_note[/e]"                : @"\U0001F3B5", \
+										   @"[e]musical_score[/e]"               : @"\U0001F3BC", \
+										   @"[e]mute[/e]"                        : @"\U0001F507", \
+										   @"[e]nail_care[/e]"                   : @"\U0001F485", \
+										   @"[e]name_badge[/e]"                  : @"\U0001F4DB", \
+										   @"[e]necktie[/e]"                     : @"\U0001F454", \
+										   @"[e]negative_squared_cross_mark[/e]" : @"\U0000274E", \
+										   @"[e]neutral_face[/e]"                : @"\U0001F610", \
+										   @"[e]new[/e]"                         : @"\U0001F195", \
+										   @"[e]new_moon[/e]"                    : @"\U0001F311", \
+										   @"[e]new_moon_with_face[/e]"          : @"\U0001F31A", \
+										   @"[e]newspaper[/e]"                   : @"\U0001F4F0", \
+										   @"[e]ng[/e]"                          : @"\U0001F196", \
+										   @"[e]no_bell[/e]"                     : @"\U0001F515", \
+										   @"[e]no_bicycles[/e]"                 : @"\U0001F6B3", \
+										   @"[e]no_entry[/e]"                    : @"\U000026D4", \
+										   @"[e]no_entry_sign[/e]"               : @"\U0001F6AB", \
+										   @"[e]no_good[/e]"                     : @"\U0001F645", \
+										   @"[e]no_mobile_phones[/e]"            : @"\U0001F4F5", \
+										   @"[e]no_mouth[/e]"                    : @"\U0001F636", \
+										   @"[e]no_pedestrians[/e]"              : @"\U0001F6B7", \
+										   @"[e]no_smoking[/e]"                  : @"\U0001F6AD", \
+										   @"[e]non-potable_water[/e]"           : @"\U0001F6B1", \
+										   @"[e]nose[/e]"                        : @"\U0001F443", \
+										   @"[e]notebook[/e]"                    : @"\U0001F4D3", \
+										   @"[e]notebook_with_decorative_cover:"    : @"\U0001F4D4", \
+										   @"[e]notes[/e]"                       : @"\U0001F3B6", \
+										   @"[e]nut_and_bolt[/e]"                : @"\U0001F529", \
+										   @"[e]o[/e]"                           : @"\U00002B55", \
+										   @"[e]o2[/e]"                          : @"\U0001F17E", \
+										   @"[e]ocean[/e]"                       : @"\U0001F30A", \
+										   @"[e]octopus[/e]"                     : @"\U0001F419", \
+										   @"[e]oden[/e]"                        : @"\U0001F362", \
+										   @"[e]office[/e]"                      : @"\U0001F3E2", \
+										   @"[e]ok[/e]"                          : @"\U0001F197", \
+										   @"[e]ok_hand[/e]"                     : @"\U0001F44C", \
+										   @"[e]ok_woman[/e]"                    : @"\U0001F646", \
+										   @"[e]older_man[/e]"                   : @"\U0001F474", \
+										   @"[e]older_woman[/e]"                 : @"\U0001F475", \
+										   @"[e]on[/e]"                          : @"\U0001F51B", \
+										   @"[e]oncoming_automobile[/e]"         : @"\U0001F698", \
+										   @"[e]oncoming_bus[/e]"                : @"\U0001F68D", \
+										   @"[e]oncoming_police_car[/e]"         : @"\U0001F694", \
+										   @"[e]oncoming_taxi[/e]"               : @"\U0001F696", \
+										   @"[e]open_book[/e]"                   : @"\U0001F4D6", \
+										   @"[e]open_file_folder[/e]"            : @"\U0001F4C2", \
+										   @"[e]open_hands[/e]"                  : @"\U0001F450", \
+										   @"[e]open_mouth[/e]"                  : @"\U0001F62E", \
+										   @"[e]ophiuchus[/e]"                   : @"\U000026CE", \
+										   @"[e]orange_book[/e]"                 : @"\U0001F4D9", \
+										   @"[e]outbox_tray[/e]"                 : @"\U0001F4E4", \
+										   @"[e]ox[/e]"                          : @"\U0001F402", \
+										   @"[e]package[/e]"                     : @"\U0001F4E6", \
+										   @"[e]page_facing_up[/e]"              : @"\U0001F4C4", \
+										   @"[e]page_with_curl[/e]"              : @"\U0001F4C3", \
+										   @"[e]pager[/e]"                       : @"\U0001F4DF", \
+										   @"[e]palm_tree[/e]"                   : @"\U0001F334", \
+										   @"[e]panda_face[/e]"                  : @"\U0001F43C", \
+										   @"[e]paperclip[/e]"                   : @"\U0001F4CE", \
+										   @"[e]parking[/e]"                     : @"\U0001F17F", \
+										   @"[e]part_alternation_mark[/e]"       : @"\U0000303D", \
+										   @"[e]partly_sunny[/e]"                : @"\U000026C5", \
+										   @"[e]passport_control[/e]"            : @"\U0001F6C2", \
+										   @"[e]paw_prints[/e]"                  : @"\U0001F43E", \
+										   @"[e]peach[/e]"                       : @"\U0001F351", \
+										   @"[e]pear[/e]"                        : @"\U0001F350", \
+										   @"[e]pencil[/e]"                      : @"\U0001F4DD", \
+										   @"[e]pencil2[/e]"                     : @"\U0000270F", \
+										   @"[e]penguin[/e]"                     : @"\U0001F427", \
+										   @"[e]pensive[/e]"                     : @"\U0001F614", \
+										   @"[e]performing_arts[/e]"             : @"\U0001F3AD", \
+										   @"[e]persevere[/e]"                   : @"\U0001F623", \
+										   @"[e]person_frowning[/e]"             : @"\U0001F64D", \
+										   @"[e]person_with_blond_hair[/e]"      : @"\U0001F471", \
+										   @"[e]person_with_pouting_face[/e]"    : @"\U0001F64E", \
+										   @"[e]phone[/e]"                       : @"\U0000260E", \
+										   @"[e]pig[/e]"                         : @"\U0001F437", \
+										   @"[e]pig2[/e]"                        : @"\U0001F416", \
+										   @"[e]pig_nose[/e]"                    : @"\U0001F43D", \
+										   @"[e]pill[/e]"                        : @"\U0001F48A", \
+										   @"[e]pineapple[/e]"                   : @"\U0001F34D", \
+										   @"[e]pisces[/e]"                      : @"\U00002653", \
+										   @"[e]pizza[/e]"                       : @"\U0001F355", \
+										   @"[e]point_down[/e]"                  : @"\U0001F447", \
+										   @"[e]point_left[/e]"                  : @"\U0001F448", \
+										   @"[e]point_right[/e]"                 : @"\U0001F449", \
+										   @"[e]point_up[/e]"                    : @"\U0000261D", \
+										   @"[e]point_up_2[/e]"                  : @"\U0001F446", \
+										   @"[e]police_car[/e]"                  : @"\U0001F693", \
+										   @"[e]poodle[/e]"                      : @"\U0001F429", \
+										   @"[e]poop[/e]"                        : @"\U0001F4A9", \
+										   @"[e]post_office[/e]"                 : @"\U0001F3E3", \
+										   @"[e]postal_horn[/e]"                 : @"\U0001F4EF", \
+										   @"[e]postbox[/e]"                     : @"\U0001F4EE", \
+										   @"[e]potable_water[/e]"               : @"\U0001F6B0", \
+										   @"[e]pouch[/e]"                       : @"\U0001F45D", \
+										   @"[e]poultry_leg[/e]"                 : @"\U0001F357", \
+										   @"[e]pound[/e]"                       : @"\U0001F4B7", \
+										   @"[e]pouting_cat[/e]"                 : @"\U0001F63E", \
+										   @"[e]pray[/e]"                        : @"\U0001F64F", \
+										   @"[e]princess[/e]"                    : @"\U0001F478", \
+										   @"[e]punch[/e]"                       : @"\U0001F44A", \
+										   @"[e]purple_heart[/e]"                : @"\U0001F49C", \
+										   @"[e]purse[/e]"                       : @"\U0001F45B", \
+										   @"[e]pushpin[/e]"                     : @"\U0001F4CC", \
+										   @"[e]put_litter_in_its_place[/e]"     : @"\U0001F6AE", \
+										   @"[e]question[/e]"                    : @"\U00002753", \
+										   @"[e]rabbit[/e]"                      : @"\U0001F430", \
+										   @"[e]rabbit2[/e]"                     : @"\U0001F407", \
+										   @"[e]racehorse[/e]"                   : @"\U0001F40E", \
+										   @"[e]radio[/e]"                       : @"\U0001F4FB", \
+										   @"[e]radio_button[/e]"                : @"\U0001F518", \
+										   @"[e]rage[/e]"                        : @"\U0001F621", \
+										   @"[e]railway_car[/e]"                 : @"\U0001F683", \
+										   @"[e]rainbow[/e]"                     : @"\U0001F308", \
+										   @"[e]raised_hand[/e]"                 : @"\U0000270B", \
+										   @"[e]raised_hands[/e]"                : @"\U0001F64C", \
+										   @"[e]raising_hand[/e]"                : @"\U0001F64B", \
+										   @"[e]ram[/e]"                         : @"\U0001F40F", \
+										   @"[e]ramen[/e]"                       : @"\U0001F35C", \
+										   @"[e]rat[/e]"                         : @"\U0001F400", \
+										   @"[e]recycle[/e]"                     : @"\U0000267B", \
+										   @"[e]red_car[/e]"                     : @"\U0001F697", \
+										   @"[e]red_circle[/e]"                  : @"\U0001F534", \
+										   @"[e]registered[/e]"                  : @"\U000000AE", \
+										   @"[e]relaxed[/e]"                     : @"\U0000263A", \
+										   @"[e]relieved[/e]"                    : @"\U0001F60C", \
+										   @"[e]repeat[/e]"                      : @"\U0001F501", \
+										   @"[e]repeat_one[/e]"                  : @"\U0001F502", \
+										   @"[e]restroom[/e]"                    : @"\U0001F6BB", \
+										   @"[e]revolving_hearts[/e]"            : @"\U0001F49E", \
+										   @"[e]rewind[/e]"                      : @"\U000023EA", \
+										   @"[e]ribbon[/e]"                      : @"\U0001F380", \
+										   @"[e]rice[/e]"                        : @"\U0001F35A", \
+										   @"[e]rice_ball[/e]"                   : @"\U0001F359", \
+										   @"[e]rice_cracker[/e]"                : @"\U0001F358", \
+										   @"[e]rice_scene[/e]"                  : @"\U0001F391", \
+										   @"[e]ring[/e]"                        : @"\U0001F48D", \
+										   @"[e]rocket[/e]"                      : @"\U0001F680", \
+										   @"[e]roller_coaster[/e]"              : @"\U0001F3A2", \
+										   @"[e]rooster[/e]"                     : @"\U0001F413", \
+										   @"[e]rose[/e]"                        : @"\U0001F339", \
+										   @"[e]rotating_light[/e]"              : @"\U0001F6A8", \
+										   @"[e]round_pushpin[/e]"               : @"\U0001F4CD", \
+										   @"[e]rowboat[/e]"                     : @"\U0001F6A3", \
+										   @"[e]rugby_football[/e]"              : @"\U0001F3C9", \
+										   @"[e]runner[/e]"                      : @"\U0001F3C3", \
+										   @"[e]running[/e]"                     : @"\U0001F3C3", \
+										   @"[e]running_shirt_with_sash[/e]"     : @"\U0001F3BD", \
+										   @"[e]sa[/e]"                          : @"\U0001F202", \
+										   @"[e]sagittarius[/e]"                 : @"\U00002650", \
+										   @"[e]sailboat[/e]"                    : @"\U000026F5", \
+										   @"[e]sake[/e]"                        : @"\U0001F376", \
+										   @"[e]sandal[/e]"                      : @"\U0001F461", \
+										   @"[e]santa[/e]"                       : @"\U0001F385", \
+										   @"[e]satellite[/e]"                   : @"\U0001F4E1", \
+										   @"[e]satisfied[/e]"                   : @"\U0001F606", \
+										   @"[e]saxophone[/e]"                   : @"\U0001F3B7", \
+										   @"[e]school[/e]"                      : @"\U0001F3EB", \
+										   @"[e]school_satchel[/e]"              : @"\U0001F392", \
+										   @"[e]scissors[/e]"                    : @"\U00002702", \
+										   @"[e]scorpius[/e]"                    : @"\U0000264F", \
+										   @"[e]scream[/e]"                      : @"\U0001F631", \
+										   @"[e]scream_cat[/e]"                  : @"\U0001F640", \
+										   @"[e]scroll[/e]"                      : @"\U0001F4DC", \
+										   @"[e]seat[/e]"                        : @"\U0001F4BA", \
+										   @"[e]secret[/e]"                      : @"\U00003299", \
+										   @"[e]see_no_evil[/e]"                 : @"\U0001F648", \
+										   @"[e]seedling[/e]"                    : @"\U0001F331", \
+										   @"[e]shaved_ice[/e]"                  : @"\U0001F367", \
+										   @"[e]sheep[/e]"                       : @"\U0001F411", \
+										   @"[e]shell[/e]"                       : @"\U0001F41A", \
+										   @"[e]ship[/e]"                        : @"\U0001F6A2", \
+										   @"[e]shirt[/e]"                       : @"\U0001F455", \
+										   @"[e]shit[/e]"                        : @"\U0001F4A9", \
+										   @"[e]shoe[/e]"                        : @"\U0001F45E", \
+										   @"[e]shower[/e]"                      : @"\U0001F6BF", \
+										   @"[e]signal_strength[/e]"             : @"\U0001F4F6", \
+										   @"[e]six_pointed_star[/e]"            : @"\U0001F52F", \
+										   @"[e]ski[/e]"                         : @"\U0001F3BF", \
+										   @"[e]skull[/e]"                       : @"\U0001F480", \
+										   @"[e]sleeping[/e]"                    : @"\U0001F634", \
+										   @"[e]sleepy[/e]"                      : @"\U0001F62A", \
+										   @"[e]slot_machine[/e]"                : @"\U0001F3B0", \
+										   @"[e]small_blue_diamond[/e]"          : @"\U0001F539", \
+										   @"[e]small_orange_diamond[/e]"        : @"\U0001F538", \
+										   @"[e]small_red_triangle[/e]"          : @"\U0001F53A", \
+										   @"[e]small_red_triangle_down[/e]"     : @"\U0001F53B", \
+										   @"[e]smile[/e]"                       : @"\U0001F604", \
+										   @"[e]smile_cat[/e]"                   : @"\U0001F638", \
+										   @"[e]smiley[/e]"                      : @"\U0001F603", \
+										   @"[e]smiley_cat[/e]"                  : @"\U0001F63A", \
+										   @"[e]smiling_imp[/e]"                 : @"\U0001F608", \
+										   @"[e]smirk[/e]"                       : @"\U0001F60F", \
+										   @"[e]smirk_cat[/e]"                   : @"\U0001F63C", \
+										   @"[e]smoking[/e]"                     : @"\U0001F6AC", \
+										   @"[e]snail[/e]"                       : @"\U0001F40C", \
+										   @"[e]snake[/e]"                       : @"\U0001F40D", \
+										   @"[e]snowboarder[/e]"                 : @"\U0001F3C2", \
+										   @"[e]snowflake[/e]"                   : @"\U00002744", \
+										   @"[e]snowman[/e]"                     : @"\U000026C4", \
+										   @"[e]sob[/e]"                         : @"\U0001F62D", \
+										   @"[e]soccer[/e]"                      : @"\U000026BD", \
+										   @"[e]soon[/e]"                        : @"\U0001F51C", \
+										   @"[e]sos[/e]"                         : @"\U0001F198", \
+										   @"[e]sound[/e]"                       : @"\U0001F509", \
+										   @"[e]space_invader[/e]"               : @"\U0001F47E", \
+										   @"[e]spades[/e]"                      : @"\U00002660", \
+										   @"[e]spaghetti[/e]"                   : @"\U0001F35D", \
+										   @"[e]sparkle[/e]"                     : @"\U00002747", \
+										   @"[e]sparkler[/e]"                    : @"\U0001F387", \
+										   @"[e]sparkles[/e]"                    : @"\U00002728", \
+										   @"[e]sparkling_heart[/e]"             : @"\U0001F496", \
+										   @"[e]speak_no_evil[/e]"               : @"\U0001F64A", \
+										   @"[e]speaker[/e]"                     : @"\U0001F50A", \
+										   @"[e]speech_balloon[/e]"              : @"\U0001F4AC", \
+										   @"[e]speedboat[/e]"                   : @"\U0001F6A4", \
+										   @"[e]star[/e]"                        : @"\U00002B50", \
+										   @"[e]star2[/e]"                       : @"\U0001F31F", \
+										   @"[e]stars[/e]"                       : @"\U0001F303", \
+										   @"[e]station[/e]"                     : @"\U0001F689", \
+										   @"[e]statue_of_liberty[/e]"           : @"\U0001F5FD", \
+										   @"[e]steam_locomotive[/e]"            : @"\U0001F682", \
+										   @"[e]stew[/e]"                        : @"\U0001F372", \
+										   @"[e]straight_ruler[/e]"              : @"\U0001F4CF", \
+										   @"[e]strawberry[/e]"                  : @"\U0001F353", \
+										   @"[e]stuck_out_tongue[/e]"            : @"\U0001F61B", \
+										   @"[e]stuck_out_tongue_closed_eyes[/e]"  : @"\U0001F61D", \
+										   @"[e]stuck_out_tongue_winking_eye[/e]"  : @"\U0001F61C", \
+										   @"[e]sun_with_face[/e]"               : @"\U0001F31E", \
+										   @"[e]sunflower[/e]"                   : @"\U0001F33B", \
+										   @"[e]sunglasses[/e]"                  : @"\U0001F60E", \
+										   @"[e]sunny[/e]"                       : @"\U00002600", \
+										   @"[e]sunrise[/e]"                     : @"\U0001F305", \
+										   @"[e]sunrise_over_mountains[/e]"      : @"\U0001F304", \
+										   @"[e]surfer[/e]"                      : @"\U0001F3C4", \
+										   @"[e]sushi[/e]"                       : @"\U0001F363", \
+										   @"[e]suspension_railway[/e]"          : @"\U0001F69F", \
+										   @"[e]sweat[/e]"                       : @"\U0001F613", \
+										   @"[e]sweat_drops[/e]"                 : @"\U0001F4A6", \
+										   @"[e]sweat_smile[/e]"                 : @"\U0001F605", \
+										   @"[e]sweet_potato[/e]"                : @"\U0001F360", \
+										   @"[e]swimmer[/e]"                     : @"\U0001F3CA", \
+										   @"[e]symbols[/e]"                     : @"\U0001F523", \
+										   @"[e]syringe[/e]"                     : @"\U0001F489", \
+										   @"[e]tada[/e]"                        : @"\U0001F389", \
+										   @"[e]tanabata_tree[/e]"               : @"\U0001F38B", \
+										   @"[e]tangerine[/e]"                   : @"\U0001F34A", \
+										   @"[e]taurus[/e]"                      : @"\U00002649", \
+										   @"[e]taxi[/e]"                        : @"\U0001F695", \
+										   @"[e]tea[/e]"                         : @"\U0001F375", \
+										   @"[e]telephone[/e]"                   : @"\U0000260E", \
+										   @"[e]telephone_receiver[/e]"          : @"\U0001F4DE", \
+										   @"[e]telescope[/e]"                   : @"\U0001F52D", \
+										   @"[e]tennis[/e]"                      : @"\U0001F3BE", \
+										   @"[e]tent[/e]"                        : @"\U000026FA", \
+										   @"[e]thought_balloon[/e]"             : @"\U0001F4AD", \
+										   @"[e]thumbsdown[/e]"                  : @"\U0001F44E", \
+										   @"[e]thumbsup[/e]"                    : @"\U0001F44D", \
+										   @"[e]ticket[/e]"                      : @"\U0001F3AB", \
+										   @"[e]tiger[/e]"                       : @"\U0001F42F", \
+										   @"[e]tiger2[/e]"                      : @"\U0001F405", \
+										   @"[e]tired_face[/e]"                  : @"\U0001F62B", \
+										   @"[e]tm[/e]"                          : @"\U00002122", \
+										   @"[e]toilet[/e]"                      : @"\U0001F6BD", \
+										   @"[e]tokyo_tower[/e]"                 : @"\U0001F5FC", \
+										   @"[e]tomato[/e]"                      : @"\U0001F345", \
+										   @"[e]tongue[/e]"                      : @"\U0001F445", \
+										   @"[e]top[/e]"                         : @"\U0001F51D", \
+										   @"[e]tophat[/e]"                      : @"\U0001F3A9", \
+										   @"[e]tractor[/e]"                     : @"\U0001F69C", \
+										   @"[e]traffic_light[/e]"               : @"\U0001F6A5", \
+										   @"[e]train[/e]"                       : @"\U0001F683", \
+										   @"[e]train2[/e]"                      : @"\U0001F686", \
+										   @"[e]tram[/e]"                        : @"\U0001F68A", \
+										   @"[e]triangular_flag_on_post[/e]"     : @"\U0001F6A9", \
+										   @"[e]triangular_ruler[/e]"            : @"\U0001F4D0", \
+										   @"[e]trident[/e]"                     : @"\U0001F531", \
+										   @"[e]triumph[/e]"                     : @"\U0001F624", \
+										   @"[e]trolleybus[/e]"                  : @"\U0001F68E", \
+										   @"[e]trophy[/e]"                      : @"\U0001F3C6", \
+										   @"[e]tropical_drink[/e]"              : @"\U0001F379", \
+										   @"[e]tropical_fish[/e]"               : @"\U0001F420", \
+										   @"[e]truck[/e]"                       : @"\U0001F69A", \
+										   @"[e]trumpet[/e]"                     : @"\U0001F3BA", \
+										   @"[e]tshirt[/e]"                      : @"\U0001F455", \
+										   @"[e]tulip[/e]"                       : @"\U0001F337", \
+										   @"[e]turtle[/e]"                      : @"\U0001F422", \
+										   @"[e]tv[/e]"                          : @"\U0001F4FA", \
+										   @"[e]twisted_rightwards_arrows[/e]"   : @"\U0001F500", \
+										   @"[e]two_hearts[/e]"                  : @"\U0001F495", \
+										   @"[e]two_men_holding_hands[/e]"       : @"\U0001F46C", \
+										   @"[e]two_women_holding_hands[/e]"     : @"\U0001F46D", \
+										   @"[e]u5272[/e]"                       : @"\U0001F239", \
+										   @"[e]u5408[/e]"                       : @"\U0001F234", \
+										   @"[e]u55b6[/e]"                       : @"\U0001F23A", \
+										   @"[e]u6307[/e]"                       : @"\U0001F22F", \
+										   @"[e]u6708[/e]"                       : @"\U0001F237", \
+										   @"[e]u6709[/e]"                       : @"\U0001F236", \
+										   @"[e]u6e80[/e]"                       : @"\U0001F235", \
+										   @"[e]u7121[/e]"                       : @"\U0001F21A", \
+										   @"[e]u7533[/e]"                       : @"\U0001F238", \
+										   @"[e]u7981[/e]"                       : @"\U0001F232", \
+										   @"[e]u7a7a[/e]"                       : @"\U0001F233", \
+										   @"[e]umbrella[/e]"                    : @"\U00002614", \
+										   @"[e]unamused[/e]"                    : @"\U0001F612", \
+										   @"[e]underage[/e]"                    : @"\U0001F51E", \
+										   @"[e]unlock[/e]"                      : @"\U0001F513", \
+										   @"[e]up[/e]"                          : @"\U0001F199", \
+										   @"[e]v[/e]"                           : @"\U0000270C", \
+										   @"[e]vertical_traffic_light[/e]"      : @"\U0001F6A6", \
+										   @"[e]vhs[/e]"                         : @"\U0001F4FC", \
+										   @"[e]vibration_mode[/e]"              : @"\U0001F4F3", \
+										   @"[e]video_camera[/e]"                : @"\U0001F4F9", \
+										   @"[e]video_game[/e]"                  : @"\U0001F3AE", \
+										   @"[e]violin[/e]"                      : @"\U0001F3BB", \
+										   @"[e]virgo[/e]"                       : @"\U0000264D", \
+										   @"[e]volcano[/e]"                     : @"\U0001F30B", \
+										   @"[e]vs[/e]"                          : @"\U0001F19A", \
+										   @"[e]walking[/e]"                     : @"\U0001F6B6", \
+										   @"[e]waning_crescent_moon[/e]"        : @"\U0001F318", \
+										   @"[e]waning_gibbous_moon[/e]"         : @"\U0001F316", \
+										   @"[e]warning[/e]"                     : @"\U000026A0", \
+										   @"[e]watch[/e]"                       : @"\U0000231A", \
+										   @"[e]water_buffalo[/e]"               : @"\U0001F403", \
+										   @"[e]watermelon[/e]"                  : @"\U0001F349", \
+										   @"[e]wave[/e]"                        : @"\U0001F44B", \
+										   @"[e]wavy_dash[/e]"                   : @"\U00003030", \
+										   @"[e]waxing_crescent_moon[/e]"        : @"\U0001F312", \
+										   @"[e]waxing_gibbous_moon[/e]"         : @"\U0001F314", \
+										   @"[e]wc[/e]"                          : @"\U0001F6BE", \
+										   @"[e]weary[/e]"                       : @"\U0001F629", \
+										   @"[e]wedding[/e]"                     : @"\U0001F492", \
+										   @"[e]whale[/e]"                       : @"\U0001F433", \
+										   @"[e]whale2[/e]"                      : @"\U0001F40B", \
+										   @"[e]wheelchair[/e]"                  : @"\U0000267F", \
+										   @"[e]white_check_mark[/e]"            : @"\U00002705", \
+										   @"[e]white_circle[/e]"                : @"\U000026AA", \
+										   @"[e]white_flower[/e]"                : @"\U0001F4AE", \
+										   @"[e]white_large_square[/e]"          : @"\U00002B1C", \
+										   @"[e]white_medium_small_square[/e]"   : @"\U000025FD", \
+										   @"[e]white_medium_square[/e]"         : @"\U000025FB", \
+										   @"[e]white_small_square[/e]"          : @"\U000025AB", \
+										   @"[e]white_square_button[/e]"         : @"\U0001F533", \
+										   @"[e]wind_chime[/e]"                  : @"\U0001F390", \
+										   @"[e]wine_glass[/e]"                  : @"\U0001F377", \
+										   @"[e]wink[/e]"                        : @"\U0001F609", \
+										   @"[e]wolf[/e]"                        : @"\U0001F43A", \
+										   @"[e]woman[/e]"                       : @"\U0001F469", \
+										   @"[e]womans_clothes[/e]"              : @"\U0001F45A", \
+										   @"[e]womans_hat[/e]"                  : @"\U0001F452", \
+										   @"[e]womens[/e]"                      : @"\U0001F6BA", \
+										   @"[e]worried[/e]"                     : @"\U0001F61F", \
+										   @"[e]wrench[/e]"                      : @"\U0001F527", \
+										   @"[e]x[/e]"                           : @"\U0000274C", \
+										   @"[e]yellow_heart[/e]"                : @"\U0001F49B", \
+										   @"[e]yen[/e]"                         : @"\U0001F4B4", \
+										   @"[e]yum[/e]"                         : @"\U0001F60B", \
+										   @"[e]zap[/e]"                         : @"\U000026A1", \
+										   @"[e]zzz[/e]"                         : @"\U0001F4A4" \
+										   } ;
+				  });
+}
+
++ (void)setupEmojiCharset
+{
+    static dispatch_once_t onceToken;
+	
+    dispatch_once( &onceToken, ^
+				  {
+					  __emojiCharacterSet = [[NSMutableCharacterSet alloc] init];
+					  
+					  for ( NSString * key in __emojiUnicodes )
+					  {
+						  [__emojiCharacterSet addCharactersInString:[__emojiUnicodes objectForKey:key]];
+					  }
+				  });
+}
+
++ (NSData *)dataFromHexString:(NSString *)string
+{
+	if ( 0 == string.length )
+		return nil;
+	
+	UInt32 len = [string length];
+	UInt32 byteLength = len / 2;
+	UInt32 byteCounter = 0;
+	
+	Byte	srcBuffer[64] = { 0 };
+	Byte *	src = srcBuffer;
+	
+	Byte	dstBuffer[64] = { 0 };
+	Byte *	dst = dstBuffer;
+	
+	[string getCString:(char *)srcBuffer];
+	
+	for ( ;byteCounter < byteLength; )
+	{
+		unsigned char c = *src++;
+		unsigned char d = *src++;
+		unsigned hi = 0, lo = 0;
+		
+		hi = charTo4Bits(c);
+		lo = charTo4Bits(d);
+		
+		if ( hi == 255 || lo == 255 )
+		{
+			//errorCase
+			return nil;
+		}
+		
+		dstBuffer[byteCounter++] = ((hi << 4) | lo);
+	}
+	
+	return [NSData dataWithBytes:dst length:byteLength];
+}
+
+- (NSString *)encodeEmoji
+{
+	[NSString setupEmojiUnicode];
+	[NSString setupEmojiCharset];
+	
+    
+	NSMutableString * result = [self mutableCopy] ;
+	
+	NSRange range = [result rangeOfCharacterFromSet:__emojiCharacterSet options:NSLiteralSearch range:NSMakeRange(0, result.length)];
+	while ( range.location != NSNotFound )
+	{
+		NSString * emoji = [result substringWithRange:range];
+		
+		NSArray * emojiStrArray = [__emojiUnicodes allKeysForObject:emoji];
+		if ([emojiStrArray count] > 0)
+		{
+			[result replaceCharactersInRange:range withString:[emojiStrArray objectAtIndex:0]];
+		}
+		
+		
+		range = [result rangeOfCharacterFromSet:__emojiCharacterSet options:NSLiteralSearch range:NSMakeRange(0, result.length)];
+	}
+	
+	return result;
+}
+
+- (NSString *)decodeEmoji
+{
+	[NSString setupEmojiUnicode];
+	[NSString setupEmojiCharset];
+	
+    NSRegularExpression * regex = [NSRegularExpression regularExpressionWithPattern:@"\\[e\\](.*?)\\[/e\\]" options:NSRegularExpressionCaseInsensitive error:NULL];
+	
+	NSArray * matchs = [regex matchesInString:self options:0 range:NSMakeRange(0, [self length])];
+	if ( nil == matchs || 0 == [matchs count] )
+	{
+		return self;
+	}
+	
+	NSMutableString *	result = [self mutableCopy];
+	NSMutableSet *		emojis = [NSMutableSet set];
+	
+	for ( NSTextCheckingResult * match in matchs )
+	{
+		NSString * emoji = [self substringWithRange:match.range];
+		if ( [emoji hasPrefix:@"[e]"] && [emoji hasSuffix:@"[/e]"] )
+		{
+			[emojis addObject:emoji];
+		}
+	}
+	
+	for ( NSString * emoji in emojis )
+	{
+		NSString * emojiValue = [__emojiUnicodes valueForKey:emoji];
+		if ( emojiValue )
+		{
+			
+			[result replaceOccurrencesOfString:emoji
+									withString:emojiValue
+									   options:NSLiteralSearch
+										 range:NSMakeRange(0, [result length])];
+		}
+	}
+	
+	return result;
+}
+
+@end
+
+// ----------------------------------
+// Unit test
+// ----------------------------------
+
+#if defined(__BEE_UNITTEST__) && __BEE_UNITTEST__
+
+TEST_CASE( NSString_BeeEmoji )
+{
+}
+TEST_CASE_END
+
+#endif	// #if defined(__BEE_UNITTEST__) && __BEE_UNITTEST__

@@ -1,0 +1,29 @@
+//
+//  NSDictionary+VRWExtension.h
+//  VRWorld
+//
+//  Created by zhouzheng on 16/8/3.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface NSDictionary (VRWExtension)
+
+
++ (NSMutableDictionary *)nonRetainDictionary;
+//放空访问
+- (id)safeObjectForKey:(id)aKey;
+
+
+@end
+
+@interface NSMutableDictionary (VRWExtension)
+//字典的防空处理
+- (void)safeSetObject:(id)anObject forKey:(id <NSCopying>)aKey;
+//字典下标的访问方式
+- (void)safeSetObject:(id)obj forKeyedSubscript:(id <NSCopying>)key;
+//删除放空处理
+- (void)safeRemoveObjectForKey:(id)aKey;
+
+@end

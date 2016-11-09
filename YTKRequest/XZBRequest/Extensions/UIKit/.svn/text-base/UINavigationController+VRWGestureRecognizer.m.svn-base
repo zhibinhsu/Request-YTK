@@ -1,0 +1,23 @@
+//
+//  UINavigationController+VRWGestureRecognizer.m
+//  VRWorld
+//
+//  Created by mingge on 16/8/26.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import "UINavigationController+VRWGestureRecognizer.h"
+
+@implementation UINavigationController (VRWGestureRecognizer)
+static char strAddrKey = 'G';
+-(BOOL)shareTouch
+{
+     return objc_getAssociatedObject(self, &strAddrKey);
+}
+
+-(void)setShareTouch:(BOOL)shareTouch
+{
+    objc_setAssociatedObject(self, &strAddrKey, @(shareTouch), OBJC_ASSOCIATION_ASSIGN);
+}
+
+@end

@@ -1,0 +1,15 @@
+//
+//  UIViewController+VRWExtension.h
+//  VRWorld
+//
+//  Created by zhouzheng on 16/9/2.
+//  Copyright © 2016年 Tony. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface UIViewController (ZZ)
+
+- (void)popToLastViewControllerAnimated:(BOOL)animated;
+
+@end
